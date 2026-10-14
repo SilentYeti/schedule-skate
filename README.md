@@ -14,7 +14,7 @@ The integration follows [world-of-skatecraft](https://github.com/Kimmo3223/world
 | Schedule I | Steam Windows/IL2CPP build **0.4.7f12**, Unity **2022.3.62f2** |
 | Skate 3 data | Extracted PS3 **BLUS30464**, USA/Asia edition |
 | Loader | MelonLoader **0.7.3** under Proton Experimental **11.0-100** |
-| Adapter | **0.1.20** |
+| Adapter | **0.1.21** |
 
 You need installed copies of both games, Steam, Proton Experimental, **Rust/Cargo 1.95 or newer**, a C compiler/linker (`cc`), Git, and **Python 3.12 or newer** with `pip` and `venv`. Tested toolchains: Rust 1.98.1 and Python 3.14.7. Setup downloads a local .NET 10 SDK, MelonLoader, Cpp2IL, Unity reference libraries, a Windows .NET 6 runtime, and Python export dependencies into `vendor/`.
 
@@ -98,7 +98,7 @@ If installation stops partway through, preserve the manifest and error message. 
 python3 scripts/launch.py --game "$schedule_game"
 ```
 
-The launcher starts the native host, applies the required Proton DLL override and offline MelonLoader flags, and stops its host when the game exits. Mount a skateboard on solid ground, then press **F8**. A status box reports progress/errors; F8 again returns control to Schedule I.
+The launcher starts the native host, applies the required Proton DLL override and offline MelonLoader flags, and stops its host when the game exits. **Skate 3 mode is enabled on startup and connects automatically when you mount a skateboard** in a single-player game. F8 returns control to Schedule I; press it again to re-enable the integration. Normal waiting, connection and recovery states are silent. Only integration failures show a temporary error popup; routine details remain in the logs.
 
 Use this launcher instead of assuming an ordinary Steam launch supplies the same configuration. It requires the standard Steam root at `~/.local/share/Steam` and uses AppID 3164500's prefix there. `--game` selects a game folder and `--proton` selects a Proton executable; these options do not relocate the Steam root/prefix. Alternative Steam layouts need launcher changes.
 
@@ -106,7 +106,7 @@ Use this launcher instead of assuming an ordinary Steam launch supplies the same
 
 | Input | Action |
 | --- | --- |
-| F8 | Toggle the integration |
+| F8 | Toggle the integration; enabled by default |
 | F7, while connected | Force keyboard/mouse; toggle back to controller preference |
 | WASD | Steer / walk |
 | Space | Push / sprint on foot |
@@ -167,7 +167,7 @@ Removal preserves saves, generated settings, logs and untracked files. It refuse
 
 | Symptom | Check |
 | --- | --- |
-| F8 does nothing | Use the launcher; check `MelonLoader/Latest.log` for `Skate Schedule` and loaded hooks. Mount a board in a single-player game and close menus. |
+| Does not connect automatically | Use the launcher; check `MelonLoader/Latest.log` for `Skate Schedule` and loaded hooks. Mount a board in a single-player game and close menus. If previously disabled or stopped by an error, F8 re-enables it. |
 | Keyboard/mouse ignored | Press F7 while connected; an idle pad otherwise takes priority. |
 | Mouse tricks too sensitive/slow | Follow calibration in [CONTROLS.md](CONTROLS.md). |
 | Port 31333 already in use | Inspect the existing bridge process. The launcher refuses an unknown host; do not start a second game/launcher. |

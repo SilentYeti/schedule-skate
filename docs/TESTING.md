@@ -37,7 +37,7 @@ The socket suite builds the actual C# mapper with controlled Unity-input/XInput 
 
 ## Capturing a reported failure
 
-After enabling F8, `<game>/SkateScheduleDiagnostics/` records `runtime.jsonl` and packed `.skb` worlds. Preserve that directory, `data/logs/bridge.log` and `<game>/MelonLoader/Latest.log` **before another launch**. The trace caps at 40,000 records; geometry retention keeps the newest 64 worlds. `latest-failure/` retains only eight, which may be insufficient for a full replay.
+After automatic connection on mounting a board, `<game>/SkateScheduleDiagnostics/` records `runtime.jsonl` and packed `.skb` worlds. Preserve that directory, `data/logs/bridge.log` and `<game>/MelonLoader/Latest.log` **before another launch**. The trace caps at 40,000 records; geometry retention keeps the newest 64 worlds. `latest-failure/` retains only eight, which may be insufficient for a full replay.
 
 Examples using your private capture paths:
 
@@ -58,6 +58,6 @@ Activation replay restores the world/spawn, not the original inputs. Full replay
 
 ## Rendered acceptance
 
-Test input selection, pushing/turning, flips, failed landings, grinding into on-foot movement/jumping, hills, F8 exits, pauses, dismount/remount and normal quitting. Check mouse look, board physics and avatar restoration on each exit.
+Test automatic startup/mount connection, silent normal states, error popup visibility/expiry, input selection, pushing/turning, flips, failed landings, grinding into on-foot movement/jumping, hills, F8 exits, pauses, dismount/remount and normal quitting. Check mouse look, board physics and avatar restoration on each exit.
 
 For stutters, compare short F8-off/on passes in the same place without competing builds/tests. Preserve exact version/error text. Do not publish game-derived worlds, game assemblies or private exports with bug reports.

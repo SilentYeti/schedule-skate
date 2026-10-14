@@ -6,14 +6,14 @@ using Il2CppScheduleOne;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(SkateSchedule.SkateMod),"Skate Schedule","0.1.20","Local prototype")]
+[assembly: MelonInfo(typeof(SkateSchedule.SkateMod),"Skate Schedule","0.1.21","Local prototype")]
 [assembly: MelonGame("TVGS","Schedule I")]
 
 namespace SkateSchedule;
 
 public sealed class SkateMod : MelonMod
 {
-    private bool enabled;
+    private bool enabled=true;
     private Skateboard? board;
     private SkateboardCamera? boardCamera;
     private BridgeConnection? connection;
@@ -52,7 +52,7 @@ public sealed class SkateMod : MelonMod
     private bool firstReply;
     private bool presentationLogged;
     private float presentationLogAt;
-    private string status="Skate 3: press F8 while riding.";
+    private string? status;
     private float statusUntil;
     private GUIStyle? statusStyle;
     internal static SkateMod? Current;
@@ -87,7 +87,7 @@ public sealed class SkateMod : MelonMod
             finalizer:new HarmonyMethod(typeof(SkateMod),nameof(EndEquipmentUpdate)));
         HarmonyInstance.Patch(AccessTools.Method(typeof(MonoState),"RemoveFromDefaultParent"),
             prefix:new HarmonyMethod(typeof(SkateMod),nameof(AllowMountRemoval)));
-        LoggerInstance.Msg("Press F8 while riding a skateboard to enable Skate 3 physics. Start the native bridge first.");
+        LoggerInstance.Msg("Skate 3 mode enabled: mount a skateboard to connect automatically. F8 toggles; F7 selects keyboard/mouse while connected.");
     }
     private static void BeginEquipmentUpdate(Skateboard_Equippable __instance,out IntPtr? __state)
     {
@@ -131,8 +131,8 @@ public sealed class SkateMod : MelonMod
         if (Input.GetKeyDown(KeyCode.F8))
         {
             enabled=!enabled;
+            status=null;
             if (!enabled) Stop();
-            Notify(enabled?"Skate 3: waiting for a mounted skateboard…":"Skate 3: disabled.");
             LoggerInstance.Msg(enabled?"Skate 3 physics enabled.":"Skate 3 physics disabled.");
         }
         try
@@ -143,15 +143,9 @@ public sealed class SkateMod : MelonMod
                 pose_age=Time.unscaledTime-receivedAt,state=frame?.state});
             else if (player?.ActiveSkateboard!=null && Time.timeScale>0 && playerCamera?.ActiveUIElementCount==0)
                 RuntimeDiagnostics.Record(new {kind="native_frame_time",time=Time.unscaledTime,dt=Time.unscaledDeltaTime,preparing=board!=null});
-            string? waiting=!enabled?null:
-                player==null?"Load a single-player game.":
-                player.ActiveSkateboard==null?"Mount a skateboard to connect.":
-                Player.PlayerList.Count>1?"Single-player only.":
-                Time.timeScale==0?"Paused; resume to connect.":
-                playerCamera==null || playerCamera.ActiveUIElementCount>0?"Close the menu to connect.":null;
-            if (!enabled || waiting!=null || player==null || player.ActiveSkateboard==null || playerCamera==null)
+            if (!enabled || player==null || player.ActiveSkateboard==null || Player.PlayerList.Count>1 ||
+                Time.timeScale==0 || playerCamera==null || playerCamera.ActiveUIElementCount>0)
             {
-                if (enabled) Notify("Skate 3: "+waiting);
                 Stop(); return;
             }
             if (board!=null && board.Pointer!=player.ActiveSkateboard.Pointer) Stop();
@@ -161,7 +155,7 @@ public sealed class SkateMod : MelonMod
                 {
                     Controller.PreferKeyboard=!Controller.PreferKeyboard;
                     Controller.Reset();
-                    Notify(Controller.PreferKeyboard?"Skate 3: keyboard/mouse — Alt + mouse for tricks.":"Skate 3: controller preferred; keyboard fallback.");
+                    LoggerInstance.Msg(Controller.PreferKeyboard?"Keyboard/mouse selected.":"Controller preferred; keyboard fallback.");
                 }
                 Controller.Poll(mouseSensitivity!.Value);
             }
@@ -172,7 +166,7 @@ public sealed class SkateMod : MelonMod
             }
             if (board==null)
             {
-                if (cacheWarmup?.IsCompleted!=true) {Notify("Skate 3: preparing collision cache…"); return;}
+                if (cacheWarmup?.IsCompleted!=true) return;
                 cacheWarmup.GetAwaiter().GetResult();
                 Start(player.ActiveSkateboard); return;
             }
@@ -186,8 +180,6 @@ public sealed class SkateMod : MelonMod
                 if (driving && frame?.state!=next.state)
                 {
                     RuntimeDiagnostics.Record(new {kind="state_change",from=frame?.state,to=next.state,next.tick});
-                    if (next.state.StartsWith("Wipeout",StringComparison.Ordinal)) Notify("Skate 3: wipeout — recovering…");
-                    else if (next.state=="Teleporting") Notify("Skate 3: getting back up…");
                 }
                 previous=driving?frame:null; frame=next; receivedAt=Time.unscaledTime;
                 if (firstReply)
@@ -200,7 +192,7 @@ public sealed class SkateMod : MelonMod
                     Capture();
                     firstReply=false; elapsed=0; reusable=true;
                     LoggerInstance.Msg($"Skating simulation connected: {frame.bones.Length} bones.");
-                    Notify("Skate 3: connected — F7 selects keyboard/mouse; F8 disables.");
+                    status=null;
                 }
             }
             if (!driving || connection==null || frame==null) return;
@@ -231,7 +223,7 @@ public sealed class SkateMod : MelonMod
             RuntimeDiagnostics.Record(new {kind="bridge_error",message=error.Message,state=frame?.state,
                 centre=new[]{collisionCentre.x,collisionCentre.y,collisionCentre.z}});
             enabled=false; Stop(true);
-            Notify("Skate 3 stopped: "+error.Message);
+            NotifyError("Skate 3 stopped: "+error.Message);
             LoggerInstance.Error($"Skating stopped: {error.Message}");
         }
         finally
@@ -252,7 +244,6 @@ public sealed class SkateMod : MelonMod
             HoldAndResume(); return;
         }
         reusable=false; origin=hit.point; collisionCentre=next.transform.position;
-        Notify("Skate 3: preparing nearby collision…");
         // Native riding continues while bounded snapshot batches and the warmed host prepare the world.
         BeginSnapshot();
     }
@@ -412,7 +403,7 @@ public sealed class SkateMod : MelonMod
         catch (Exception error)
         {
             enabled=false; Stop(true); LoggerInstance.Error($"Skating presentation stopped: {error.Message}");
-            Notify("Skate 3 stopped: "+error.Message);
+            NotifyError("Skate 3 stopped: "+error.Message);
         }
     }
     private void Stop(bool close=false)
@@ -477,10 +468,10 @@ public sealed class SkateMod : MelonMod
         board=null; boardCamera=null; cameraTransform=null; cameraRootTransform=null; avatarPose=null; frame=null; previous=null; presentation=null;
         driving=false; boardHeld=false; elapsed=0; presentedFrame=-1;
     }
-    private void Notify(string message) {status=message; statusUntil=Time.unscaledTime+10;}
+    private void NotifyError(string message) {status=message; statusUntil=Time.unscaledTime+10;}
     public override void OnGUI()
     {
-        if (!enabled && Time.unscaledTime>statusUntil) return;
+        if (status==null || Time.unscaledTime>statusUntil) return;
         statusStyle??=new GUIStyle(GUI.skin.box) {fontSize=18,wordWrap=true,alignment=TextAnchor.MiddleLeft};
         GUI.Box(new Rect(20,20,Math.Min(Screen.width-40,900),72),status,statusStyle);
     }

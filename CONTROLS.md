@@ -1,14 +1,14 @@
 # Skate Schedule controls
 
-This layout is provided by adapter **0.1.20**. Physical mouse feel and Schedule I key overlaps still need wider in-game testing.
+This layout is provided by adapter **0.1.21**. Physical mouse feel and Schedule I key overlaps still need wider in-game testing.
 
 The starting point is [Skate3Recomp's documented keyboard layout](https://github.com/mchughalex/skate3recomp/blob/f6e0ae87fdfecbadb5c1e36c55d66a744187a3cd/README.md#keyboard-keybinds), checked on 2026-10-13. Its WASD, face-button keys, mouse triggers and bumper keys provide a complete virtual controller. This mod adds the user's requested Alt mouse modifier, arrow alternatives, half-stick input and F7 device selection. It does not import that project's game or input implementation.
 
-Mount a Schedule I skateboard normally and press **F8** to connect. F8 again restores Schedule I control. Native Skate 3 on-foot mode still runs inside the mounted Schedule I session; **F** switches the native skater between riding and walking, while F8 exits the integration.
+Skate 3 mode starts enabled and connects automatically when you mount a Schedule I skateboard. **F8** restores Schedule I control; press it again to re-enable automatic connection. Native Skate 3 on-foot mode still runs inside the mounted Schedule I session; **F** switches the native skater between riding and walking, while F8 exits the integration. Normal connection/waiting/recovery states have no popup; only integration failures do.
 
 | Key/input | Skate 3 action / virtual controller control |
 | --- | --- |
-| F8 | Enable/disable Skate 3 mode |
+| F8 | Enable/disable Skate 3 mode; enabled on startup |
 | F7 while connected | Toggle forced keyboard/mouse versus controller preference with keyboard fallback |
 | WASD | Left stick: steer or walk |
 | Space | A: push while riding; sprint on foot |
