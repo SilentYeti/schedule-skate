@@ -55,7 +55,7 @@ def main():
             })
             command=[str(args.proton),"run",str(args.game/"Schedule I.exe"),
                      "--melonloader.disablestartscreen","--melonloader.hideconsole","--melonloader.agfoffline",*game_args]
-            print("Launching Schedule I. Mount a skateboard, then press F8.",flush=True)
+            print("Launching Schedule I. Skate 3 connects automatically when you mount a skateboard; F8 toggles it.",flush=True)
             runtime=STEAM/"steamapps/common/SteamLinuxRuntime_sniper/run"
             if runtime.is_file():
                 command=[str(runtime),"--",*command]

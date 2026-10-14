@@ -45,7 +45,7 @@ def install(game, dry_run):
         if destination.exists():
             raise FileExistsError(f"Refusing to replace existing file: {destination}")
     print(f"Copy {len(copies)} loader/runtime files and the compiled mod into {game}")
-    print("The skating bridge remains off until F8 is pressed while riding.")
+    print("Skate 3 mode starts enabled and connects when you mount a skateboard; F8 toggles it.")
     if dry_run:
         return
     installed=[]
