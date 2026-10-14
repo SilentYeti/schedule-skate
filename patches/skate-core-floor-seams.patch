@@ -1,0 +1,202 @@
+diff --git a/skate/crates/skate-core/src/physics/board_world.rs b/skate/crates/skate-core/src/physics/board_world.rs
+index dcf667e..263ba82 100644
+--- a/skate/crates/skate-core/src/physics/board_world.rs
++++ b/skate/crates/skate-core/src/physics/board_world.rs
+@@ -1,3 +1,4 @@
++// Modified for Skate Schedule: imported road seam handling for Schedule I collision.
+ //! Contacts for every board primitive against the host triangle world.
+ //! Rust owns geometry storage and traversal. Recovered query8277B720,
+ //! triangle fixup82AD3130, material combine82763078 and contact retention
+@@ -22,6 +23,8 @@ use super::{
+     },
+ };
+ 
++const IMPORTED_FLOOR_MIN_UP: f32 = std::f32::consts::FRAC_1_SQRT_2;
++
+ #[derive(Clone, Copy, Debug)]
+ pub struct WorldTriangle {
+     pub triangle: Triangle,
+@@ -403,14 +406,14 @@ fn imported_internal_floor_edge(
+     }
+     let probe = |sign: f32| {
+         Vector3::new(
+-            contact.x + sign * 0.005 * contact_normal.x / lateral,
++            contact.x + sign * 0.03 * contact_normal.x / lateral,
+             contact.y,
+-            contact.z + sign * 0.005 * contact_normal.z / lateral,
++            contact.z + sign * 0.03 * contact_normal.z / lateral,
+         )
+     };
+-    if face.y >= 0.98 && contact_normal.y > 0.05 {
++    if face.y >= IMPORTED_FLOOR_MIN_UP && contact_normal.y > 0.05 {
+         // A floor triangle's exposed edge is internal only where another
+-        // coplanar floor covers the point immediately beyond it.
++        // floor continues immediately beyond it; compare heights at the join, not along the new slope.
+         let mut beyond = probe(1.);
+         let origin = source.triangle.vertices[0];
+         beyond.y =
+@@ -418,8 +421,8 @@ fn imported_internal_floor_edge(
+         return !point_in_floor_triangle(beyond, source.triangle.vertices)
+             && floor_at(
+                 beyond,
++                contact,
+                 Some(source_index),
+-                Some(face),
+                 candidates,
+                 triangles,
+                 bounds,
+@@ -428,23 +431,22 @@ fn imported_internal_floor_edge(
+     // A brush side ending at floor height is also internal when the same
+     // floor spans both sides. This catches buried sides of overlapping brush
+     // boxes without removing a true curb or a wall rising above the floor.
+-    if face.y.abs() > 0.2
+-        || source
+-            .triangle
+-            .vertices
+-            .iter()
+-            .any(|p| p.y > contact.y + 0.01)
+-    {
++    if face.y.abs() >= IMPORTED_FLOOR_MIN_UP {
+         return false;
+     }
+-    floor_at(probe(-1.), None, None, candidates, triangles, bounds)
+-        && floor_at(probe(1.), None, None, candidates, triangles, bounds)
++    // A wheel may contact a buried side below its top; test floor continuation at the side's top.
++    let top=source.triangle.vertices.iter().map(|p|p.y).fold(f32::NEG_INFINITY,f32::max);
++    // Raising a contact on a tilted brush side must stay on that side's plane.
++    let shift=-face.y*(top-contact.y)/(face.x*face.x+face.z*face.z);
++    let at_top=|sign| Vector3 {x:probe(sign).x+face.x*shift,y:top,z:probe(sign).z+face.z*shift};
++    floor_at(at_top(-1.), at_top(0.), None, candidates, triangles, bounds)
++        && floor_at(at_top(1.), at_top(0.), None, candidates, triangles, bounds)
+ }
+ 
+ fn floor_at(
+     probe: Vector3,
++    height_reference: Vector3,
+     excluded: Option<usize>,
+-    reference: Option<Vector3>,
+     candidates: &[usize],
+     triangles: &[WorldTriangle],
+     bounds: &[Bounds],
+@@ -455,11 +457,7 @@ fn floor_at(
+         }
+         let other = &triangles[other_index];
+         let normal = other.triangle.feature.normal;
+-        if normal.y < 0.98
+-            || reference.is_some_and(|face| {
+-                face.x * normal.x + face.y * normal.y + face.z * normal.z < 0.999
+-            })
+-        {
++        if normal.y < IMPORTED_FLOOR_MIN_UP {
+             return false;
+         }
+         let b = bounds[other_index];
+@@ -471,11 +469,12 @@ fn floor_at(
+             return false;
+         }
+         let p = other.triangle.vertices;
+-        let plane_gap = (other.triangle.feature.normal.x * (probe.x - p[0].x)
+-            + other.triangle.feature.normal.y * (probe.y - p[0].y)
+-            + other.triangle.feature.normal.z * (probe.z - p[0].z))
++        let plane_gap = (normal.x * (height_reference.x - p[0].x)
++            + normal.y * (height_reference.y - p[0].y)
++            + normal.z * (height_reference.z - p[0].z))
+             .abs();
+-        plane_gap <= 0.002 && point_in_floor_triangle(probe, p)
++        // Authored road slabs have centimetre gaps and millimetre height mismatches.
++        plane_gap <= 0.005 && point_in_floor_triangle(probe, p)
+     })
+ }
+ 
+diff --git a/skate/crates/skate-core/src/physics/collision/sphere_triangle.rs b/skate/crates/skate-core/src/physics/collision/sphere_triangle.rs
+index 6bbad43..d0cc5fa 100644
+--- a/skate/crates/skate-core/src/physics/collision/sphere_triangle.rs
++++ b/skate/crates/skate-core/src/physics/collision/sphere_triangle.rs
+@@ -1,3 +1,4 @@
++// Modified for Skate Schedule: reject refined contacts outside sphere query range.
+ //! Sphere/triangle execution path of PrimitivePairIntersect (82AD3CD8).
+ //! Both primitive orders, two-sided geometry, finite edges, vertices, fatness,
+ //! separating-direction refinement and complete triangle fixups are preserved.
+@@ -149,6 +150,9 @@ pub(super) fn build_prism(
+         let candidate = scale(delta, inverse_length);
+         let (a, b) = interval_gaps(sphere, triangle, candidate, triangle_is_a);
+         let maximum = if a > b { a } else { b };
++        if maximum > (fat_b + minimum_separating_distance) + fat_a {
++            return None;
++        }
+         if separating_distance <= maximum {
+             normal = if a > b { neg(candidate) } else { candidate };
+         }
+diff --git a/skate/crates/skate-core/src/physics/world_contact/primitive_query.rs b/skate/crates/skate-core/src/physics/world_contact/primitive_query.rs
+index 999aacc..5b5d783 100644
+--- a/skate/crates/skate-core/src/physics/world_contact/primitive_query.rs
++++ b/skate/crates/skate-core/src/physics/world_contact/primitive_query.rs
+@@ -1,3 +1,4 @@
++// Modified for Skate Schedule: reject refined contacts outside primitive query range.
+ //! Physics/world primitive query 8277B720 and moving-volume/triangle dispatch
+ //! 8277BC58. Geometry lives in typed host-owned records; only the recovered
+ //! kernels' GP and feature scratch boundaries use native word layouts.
+@@ -121,6 +122,10 @@ fn contact_points(
+         let reverse = f32::from_bits(bi[0]) - f32::from_bits(ai[4]);
+         let flip = forward > reverse;
+         let refined = if flip { forward } else { reverse };
++        // The face plane can be close while the nearest finite edge is outside the contact range.
++        if refined > (fat_b + limit) + fat_a {
++            return None;
++        }
+         if refined >= separation {
+             normal = direction.map(|v| f32::from_bits(if flip { v ^ 0x8000_0000 } else { v }));
+         }
+diff --git a/skate/crates/skate-core/src/player/offboard/ground_motion/support.rs b/skate/crates/skate-core/src/player/offboard/ground_motion/support.rs
+index 11a8da8..6e53325 100644
+--- a/skate/crates/skate-core/src/player/offboard/ground_motion/support.rs
++++ b/skate/crates/skate-core/src/player/offboard/ground_motion/support.rs
+@@ -1,3 +1,4 @@
++// Modified for Skate Schedule: exclude homogeneous W from moving-support displacement.
+ //!82D7EEAC..F454 moving support history and800C0 output filtering.
+ use super::math::*;
+ use super::{Frame, GroundMotionInput, GroundMotionState};
+@@ -27,7 +28,9 @@ pub(super) fn update(s: &mut GroundMotionState, i: &GroundMotionInput) -> Frame
+             i.contact_frame_32,
+         );
+         let moved = transform_point(s.frame_0[3], delta);
+-        let velocity = scale(sub(moved, s.frame_0[3]), reciprocal(DT));
++        let mut velocity = scale(sub(moved, s.frame_0[3]), reciprocal(DT));
++        // Rigid transforms store W=0; a source point's homogeneous W is not displacement.
++        velocity[3] = 0.0;
+         let acceleration = madd(
+             sub(velocity, s.support_velocity_256),
+             reciprocal(DT),
+diff --git a/skate/crates/skate-core/src/player/offboard/ground_motion/tests.rs b/skate/crates/skate-core/src/player/offboard/ground_motion/tests.rs
+index db597f5..d116164 100644
+--- a/skate/crates/skate-core/src/player/offboard/ground_motion/tests.rs
++++ b/skate/crates/skate-core/src/player/offboard/ground_motion/tests.rs
+@@ -1,3 +1,4 @@
++// Modified for Skate Schedule: regress stationary support with a homogeneous point.
+ use super::math::{DT, IDENTITY, UP, ZERO};
+ use super::*;
+ fn state() -> GroundMotionState {
+@@ -126,6 +127,23 @@ fn rotated_support_produces_signed_yaw_history() {
+     near(s.predicted_support_yaw_344, 2.0 * s.support_yaw_336);
+ }
+ #[test]
++fn stationary_support_does_not_turn_point_w_into_motion() {
++    let mut s = state();
++    let mut i = input();
++    s.frame_0[3] = [18.5, 0., 70.2, 1.];
++    s.published_frame_64 = s.frame_0;
++    i.contact_flags_176 = 1;
++    i.contact_position_0 = [18.5, 0., 70.2, 0.];
++    for _ in 0..600 {
++        update(&mut s, &i);
++        assert!(s.frame_0.iter().flatten().all(|v|v.is_finite()));
++        assert_eq!(s.support_velocity_256, ZERO);
++        assert_eq!(s.predicted_support_velocity_272, ZERO);
++        assert_eq!(s.support_acceleration_304, ZERO);
++        assert_eq!(s.frame_0[3], [18.5, 0., 70.2, 1.]);
++    }
++}
++#[test]
+ fn mirrored_support_acceleration_reverses_x_and_z_filter() {
+     let mut a = state();
+     let mut b = state();

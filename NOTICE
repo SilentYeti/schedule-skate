@@ -1,0 +1,30 @@
+Skate Schedule
+Copyright 2026 Skate Schedule contributors
+
+Project source is licensed under the Apache License, Version 2.0.
+See LICENSE. Third-party dependencies retain their own licences.
+
+src/rails.rs is adapted from Kimmo3223/world-of-skatecraft,
+crates/benilla-app/src/skate/rails.rs. Its upstream header credits
+chasmlol/2010-rust-rewrite-mashup, crates/render_anim/src/skate/rails.rs.
+That file is Apache-2.0; see LICENSES/Apache-2.0.txt.
+The adaptation converts coordinates at the bridge boundary; the detector's
+original attribution is preserved in the source.
+
+The host uses the pinned Kimmo3223/2010-rust-rewrite-mashup Skate engine.
+The exporter uses the pinned SK8-ENGINE/skate-3-rust-engine tools.
+Their license notices remain in their vendor checkouts.
+MelonLoader and its bundled dependencies retain their own notices.
+No game assets or generated game assemblies are included in source control.
+
+patches/skate-core-floor-seams.patch modifies the pinned engine's board-world,
+sphere/primitive contact queries, off-board support motion and its regression
+tests. Applied files carry notices identifying the Skate Schedule changes.
+
+Upstream attribution retained from the engine's NOTICE:
+IW4L was originally developed by vladtrc.
+Copyright 2026 vladtrc
+https://github.com/vladtrc/iw4L
+IW4L is licensed under the Apache License, Version 2.0.
+The complete upstream NOTICE remains in the downloaded vendor checkout;
+unused fonts, game content and unrelated renderer code are not redistributed here.

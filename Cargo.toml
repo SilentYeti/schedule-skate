@@ -1,0 +1,20 @@
+[package]
+name = "skate-schedule"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+
+[dependencies]
+skate-host = { path = "vendor/mashup/skate/crates/skate-host" }
+skate-data = { path = "vendor/mashup/skate/crates/skate-data" }
+skate-core = { path = "vendor/mashup/skate/crates/skate-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bevy = { version = "0.19", default-features = false, features = ["std"] }
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.dev]
+opt-level = 3
