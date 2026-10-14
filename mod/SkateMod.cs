@@ -6,7 +6,7 @@ using Il2CppScheduleOne;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(SkateSchedule.SkateMod),"Skate Schedule","0.1.21","Local prototype")]
+[assembly: MelonInfo(typeof(SkateSchedule.SkateMod),"Skate Schedule","0.1.22","Local prototype")]
 [assembly: MelonGame("TVGS","Schedule I")]
 
 namespace SkateSchedule;
@@ -344,7 +344,10 @@ public sealed class SkateMod : MelonMod
             board.PlayerContainer.SetPositionAndRotation(origin+(Vector3)root.GetColumn(3)+upright*containerOffset,upright);
             board.CurrentSpeed_Kmh=Space.FromEngine(frame.velocity).magnitude*3.6f;
             long positioned=System.Diagnostics.Stopwatch.GetTimestamp();
+            var containerPosition=board.PlayerContainer.position;
             avatarPose?.Apply(visible,board.transform,origin);
+            // Moving the carried board must not drag its player-container child along with it.
+            if (visible.carry_hand!=null && CollisionFocus.Detached(visible.state)) board.PlayerContainer.position=containerPosition;
             long animated=System.Diagnostics.Stopwatch.GetTimestamp();
             if (Time.frameCount%4==0)
             {

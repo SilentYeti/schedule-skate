@@ -33,7 +33,7 @@ python3 -B scripts/riding_checks.py --out data/riding-report.json
 
 These tools start and stop their own isolated host on an unused loopback port. They do not launch Schedule I or modify saves. Avoid them during a rendered frame-time comparison: their CPU load distorts measurements.
 
-The socket suite builds the actual C# mapper with controlled Unity-input/XInput fixtures, checks generated packets and verifies a mouse charge/flick produces a kickflip and lands. Riding checks cover walking, jumps, landed/failed flips, ragdoll/teleport recovery, collision streaming and slopes. Headless checks measure camera aim and continued responses during dense collision rebuilding. Timing includes client work and is not a Unity frame rate or pure server benchmark.
+The socket suite builds the actual C# mapper with controlled Unity-input/XInput fixtures, checks generated packets and verifies a mouse charge/flick produces a kickflip and lands. It also checks native held-board hand ownership across dismount, walking and remount; mounted boards have no hand owner. Shared C# checks preserve the native hand-to-board offset for both hands at different headings and avatar proportions. Riding checks cover walking, jumps, landed/failed flips, ragdoll/teleport recovery, collision streaming and slopes. Headless checks measure camera aim and continued responses during dense collision rebuilding. Timing includes client work and is not a Unity frame rate or pure server benchmark.
 
 ## Capturing a reported failure
 
@@ -58,6 +58,6 @@ Activation replay restores the world/spawn, not the original inputs. Full replay
 
 ## Rendered acceptance
 
-Test automatic startup/mount connection, silent normal states, error popup visibility/expiry, input selection, pushing/turning, flips, failed landings, grinding into on-foot movement/jumping, hills, F8 exits, pauses, dismount/remount and normal quitting. Check mouse look, board physics and avatar restoration on each exit.
+Test automatic startup/mount connection, silent normal states, error popup visibility/expiry, input selection, pushing/turning, flips, failed landings, grinding into on-foot movement/jumping, hills, F8 exits, pauses, dismount/remount and normal quitting. While carrying the board, walk/turn/stop and check the grip from both sides; verify released boards remain free. `carried_board` trace entries record source/visible hand positions and the applied translation. These numeric tests do not validate Unity parenting, visible finger contact or skinning. Check mouse look, board physics and avatar restoration on each exit.
 
 For stutters, compare short F8-off/on passes in the same place without competing builds/tests. Preserve exact version/error text. Do not publish game-derived worlds, game assemblies or private exports with bug reports.

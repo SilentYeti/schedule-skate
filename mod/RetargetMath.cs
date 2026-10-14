@@ -32,6 +32,8 @@ static class RetargetMath
         board+(sourceHip-sourceBoard)*scale;
     public static Vector3 FootCorrection(Vector3 actualLeft,Vector3 actualRight,Vector3 desiredLeft,Vector3 desiredRight) =>
         (desiredLeft+desiredRight-actualLeft-actualRight)*0.5f;
+    public static Vector3 CarriedBoardPosition(Vector3 board,Vector3 sourceHand,Vector3 targetHand) =>
+        board+targetHand-sourceHand;
     public static float LegScale(float target,float source)
     {
         float scale=target/source;

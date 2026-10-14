@@ -13,13 +13,15 @@ class PatchChecks(unittest.TestCase):
             root=Path(directory); target=root/relative
             for filename in (relative,relative.parent/'collision/sphere_triangle.rs',relative.parent/'world_contact/primitive_query.rs',
                              Path('skate/crates/skate-core/src/player/offboard/ground_motion/support.rs'),
-                             Path('skate/crates/skate-core/src/player/offboard/ground_motion/tests.rs')):
+                             Path('skate/crates/skate-core/src/player/offboard/ground_motion/tests.rs'),
+                             Path('skate/crates/skate-host/src/physics/bridge.rs')):
                 contents=subprocess.check_output(['git','-C',str(PROJECT/'vendor/mashup'),'show',f'HEAD:{filename}'])
                 (root/filename).parent.mkdir(parents=True,exist_ok=True); (root/filename).write_bytes(contents)
             pristine=target.read_bytes()
             apply_floor_seam_patch(root)
             applied=target.read_bytes()
             self.assertNotEqual(applied,pristine)
+            self.assertIn(b'pub carry_hand: Option<u32>',(root/'skate/crates/skate-host/src/physics/bridge.rs').read_bytes())
             apply_floor_seam_patch(root)
             self.assertEqual(target.read_bytes(),applied)
             conflict=pristine.replace(b'if face.y.abs() > 0.2',b'if face.y.abs() > 0.3')

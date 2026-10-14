@@ -32,12 +32,13 @@ def download(url, target, sha512=None):
 
 
 def apply_floor_seam_patch(destination):
-    patch=PROJECT/"patches/skate-core-floor-seams.patch"
     command=["git","-C",str(destination),"apply"]
-    if subprocess.run([*command,"--reverse","--check",str(patch)],capture_output=True).returncode==0:
-        return
-    subprocess.run([*command,"--check",str(patch)],check=True)
-    subprocess.run([*command,str(patch)],check=True)
+    for name in ("skate-core-floor-seams.patch","skate-host-carry-hand.patch"):
+        patch=PROJECT/"patches"/name
+        if subprocess.run([*command,"--reverse","--check",str(patch)],capture_output=True).returncode==0:
+            continue
+        subprocess.run([*command,"--check",str(patch)],check=True)
+        subprocess.run([*command,str(patch)],check=True)
 
 
 def main():

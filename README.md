@@ -14,7 +14,7 @@ The integration follows [world-of-skatecraft](https://github.com/Kimmo3223/world
 | Schedule I | Steam Windows/IL2CPP build **0.4.7f12**, Unity **2022.3.62f2** |
 | Skate 3 data | Extracted PS3 **BLUS30464**, USA/Asia edition |
 | Loader | MelonLoader **0.7.3** under Proton Experimental **11.0-100** |
-| Adapter | **0.1.21** |
+| Adapter | **0.1.22** |
 
 You need installed copies of both games, Steam, Proton Experimental, **Rust/Cargo 1.95 or newer**, a C compiler/linker (`cc`), Git, and **Python 3.12 or newer** with `pip` and `venv`. Tested toolchains: Rust 1.98.1 and Python 3.14.7. Setup downloads a local .NET 10 SDK, MelonLoader, Cpp2IL, Unity reference libraries, a Windows .NET 6 runtime, and Python export dependencies into `vendor/`.
 
@@ -38,7 +38,7 @@ ps3_game="/path/to/Skate 3/PS3_GAME"
 python3 scripts/setup_dev.py
 ```
 
-Setup checks out pinned upstream revisions and applies the included five-file engine patch. It refuses conflicting vendor revisions/edits. Tools stay inside this checkout; this step does not install the mod into Schedule I.
+Setup checks out pinned upstream revisions and applies the included collision/support fixes and held-board ownership export. It refuses conflicting vendor revisions/edits. Tools stay inside this checkout; this step does not install the mod into Schedule I.
 
 ### 2. Export data from your games
 
@@ -124,7 +124,7 @@ See **[CONTROLS.md](CONTROLS.md)** for stick clicks, bumpers, half-stick manuals
 
 ## Status and limitations
 
-Camera following, rider animation, improved arms, trick-dismount protection, mouse-look restoration and the bar hill improvement have been confirmed in-game on the development installation. Socket tests execute the actual C# input mapper; a generated mouse flick produces a native kickflip and returns to grounded riding. Headless tests cover failed-trick ragdoll recovery, walking, streamed collision and slope riding.
+Automatic mount connection, silent normal status, camera following, rider animation, improved arms, trick-dismount protection, mouse-look restoration and the bar hill improvement have been confirmed in-game on the development installation. Socket tests execute the actual C# input mapper; a generated mouse flick produces a native kickflip and returns to grounded riding. Headless tests cover failed-trick ragdoll recovery, walking, streamed collision and slope riding.
 
 Known unfinished areas:
 
@@ -132,6 +132,7 @@ Known unfinished areas:
 - Some suburban hills remained bumpy; later fixes pass captured-road tests but still need confirmation there.
 - A nonfinite on-foot launch after a grind/runout was traced to fourth-coordinate support motion and corrected. Its direct native regression passes; recurrence in real play still needs checking.
 - The avatar maps 22 of 36 source bones. Fingers, separate foot IK and complete trick/skin coverage are unfinished.
+- Carried-board placement now accounts for the visible rig's hand position using native possession ownership. Numeric alignment/ownership checks pass; the intermittent visible carry offset still needs in-game confirmation.
 - Dynamic/unsupported colliders and differences from PhysX-cooked convex hulls remain limitations. Terrain and static boxes, spheres, capsules and cached meshes are supported.
 - Grind rails are inferred from collision; authored rails, PS3 character graphics and multiplayer integration are not implemented.
 

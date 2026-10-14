@@ -20,6 +20,7 @@ sealed class AvatarRetargeter : IDisposable
     private readonly bool animationEnabled,animatorEnabled,ikEnabled,bodyIkEnabled,lookEnabled;
     private readonly float legScale;
     private readonly Bone leftFoot,rightFoot;
+    private readonly Bone[] hands;
     private bool held;
 
     private static NQuaternion Numeric(Quaternion q) => new(q.x,q.y,q.z,q.w);
@@ -81,6 +82,7 @@ sealed class AvatarRetargeter : IDisposable
             bones=selected.ToArray();
             leftFoot=bones.Single(b=>initial.names[b.Source]=="LEFTFOOT");
             rightFoot=bones.Single(b=>initial.names[b.Source]=="RIGHTFOOT");
+            hands=new[]{bones.Single(b=>initial.names[b.Source]=="LEFTHAND"),bones.Single(b=>initial.names[b.Source]=="RIGHTHAND")};
             return;
         }
         throw new IOException("Could not find the local avatar's complete Mixamo rig and bind poses.");
@@ -111,7 +113,24 @@ sealed class AvatarRetargeter : IDisposable
             RetargetMath.HipPosition(CollisionExport.Numeric(board.position),
             CollisionExport.Numeric((Vector3)hip.GetColumn(3)),CollisionExport.Numeric((Vector3)sourceBoard.GetColumn(3)),legScale);
         bones[0].Transform.position=new Vector3(position.X,position.Y,position.Z);
-        if (detached) return;
+        if (detached)
+        {
+            if (frame.carry_hand is int hand)
+            {
+                var sourceHand=origin+(Vector3)(root*Space.Matrix(frame.bones[hands[hand].Source])).GetColumn(3);
+                var targetHand=hands[hand].Transform.position;
+                // Target limb lengths differ; move the held board with its hand without changing native grip/rotation.
+                var adjusted=RetargetMath.CarriedBoardPosition(CollisionExport.Numeric(board.position),
+                    CollisionExport.Numeric(sourceHand),CollisionExport.Numeric(targetHand));
+                board.position=new Vector3(adjusted.X,adjusted.Y,adjusted.Z);
+                if (Time.frameCount%4==0)
+                    RuntimeDiagnostics.Record(new {kind="carried_board",frame.tick,hand,
+                        source_hand=new[]{sourceHand.x,sourceHand.y,sourceHand.z},
+                        target_hand=new[]{targetHand.x,targetHand.y,targetHand.z},
+                        correction=new[]{targetHand.x-sourceHand.x,targetHand.y-sourceHand.y,targetHand.z-sourceHand.z}});
+            }
+            return;
+        }
         System.Numerics.Vector3 Desired(Bone foot) => RetargetMath.HipPosition(CollisionExport.Numeric(board.position),
             CollisionExport.Numeric((Vector3)(root*Space.Matrix(frame.bones[foot.Source])).GetColumn(3)),
             CollisionExport.Numeric((Vector3)sourceBoard.GetColumn(3)),legScale);

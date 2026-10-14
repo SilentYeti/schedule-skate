@@ -192,6 +192,22 @@ var scaledHip=RetargetMath.HipPosition(new Vector3(100,5,50),new Vector3(2,1,4),
 if (Vector3.Distance(scaledHip,new Vector3(100,6.2f,50))>1e-5) throw new Exception("Retargeted hips did not follow the displayed board/proportions.");
 var feetCorrection=RetargetMath.FootCorrection(new Vector3(-1,-0.07f,0),new Vector3(1,-0.07f,0),-Vector3.UnitX,Vector3.UnitX);
 if (Vector3.Distance(feetCorrection,new Vector3(0,0.07f,0))>1e-6) throw new Exception("Retargeted feet did not compensate the hip offsets.");
+// Animated wrists move differently on rigs with different proportions; their native grip must stay fixed.
+foreach (float heading in new[]{0f,0.7f,MathF.PI,-1.4f})
+foreach (float scale in new[]{0.85f,1f,1.071f,1.3f})
+foreach (float side in new[]{-1f,1f})
+{
+    var turn=Quaternion.CreateFromAxisAngle(Vector3.UnitY,heading);
+    var world=new Vector3(101,5,-33);
+    var wrist=Vector3.Transform(new Vector3(side*0.4f,0.85f,0.1f),turn);
+    var sourceHand=world+wrist;
+    var targetHand=world+wrist*scale+Vector3.Transform(new Vector3(side*0.05f,-0.04f,0.03f),turn);
+    var grip=Vector3.Transform(new Vector3(side*0.12f,-0.1f,0.02f),turn);
+    var carried=RetargetMath.CarriedBoardPosition(sourceHand+grip,sourceHand,targetHand);
+    if (Vector3.Distance(carried-targetHand,grip)>2e-5f)
+        throw new Exception("Carried board lost its native wrist-to-board offset after retargeting.");
+}
+Console.WriteLine("Carried board passed: native wrist offset retained for both hands, rotated headings and different rig proportions.");
 foreach (float bad in new[]{0f,-1f,float.NaN,float.PositiveInfinity,20f})
 {
     try {RetargetMath.LegScale(bad,1); throw new Exception("Invalid avatar proportions accepted.");}

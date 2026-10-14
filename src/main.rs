@@ -46,6 +46,7 @@ fn validate_aspect(aspect: f32) -> Result<(), String> {
 #[derive(Serialize)]
 struct Frame {
     ok: bool,
+    carry_hand: Option<u32>,
     root: [f32; 16],
     bones: Vec<[f32; 16]>,
     names: Vec<String>,
@@ -69,7 +70,7 @@ fn frame(p: Pose, period: f32) -> Result<Frame, String> {
         return Err("Simulation produced a non-finite pose".into());
     }
     Ok(Frame {
-        ok: true, root: p.root.to_cols_array(),
+        ok: true, carry_hand: p.carry_hand, root: p.root.to_cols_array(),
         bones: p.bones.iter().map(|b| b.to_cols_array()).collect(),
         names: p.names,
         camera: p.camera.map(|(position,basis,fov)| Camera {

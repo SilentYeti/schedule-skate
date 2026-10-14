@@ -1,0 +1,25 @@
+diff --git a/skate/crates/skate-host/src/physics/bridge.rs b/skate/crates/skate-host/src/physics/bridge.rs
+index 812f6c2..470eb06 100644
+--- a/skate/crates/skate-host/src/physics/bridge.rs
++++ b/skate/crates/skate-host/src/physics/bridge.rs
+@@ -32,7 +32,10 @@ pub struct Session {
+     /// Stock gravity, kept while [`Session::set_gravity_scale`] changes it.
+     base_gravity: Option<skate_core::math::Vector3>,
+ }
++// Modified for Skate Schedule: expose native held-board ownership for avatar retargeting.
+ pub struct Pose {
++    /// Left (0) or right (1), only while the possession controller holds the board.
++    pub carry_hand: Option<u32>,
+     pub root: Mat4,
+     pub bones: Vec<Mat4>,
+     pub names: Vec<String>,
+@@ -271,6 +274,9 @@ impl Session {
+             .rates
+             .linear_velocity;
+         Pose {
++            carry_hand: (self.skater.skateboard_controller.fields.state_448 == 1)
++                .then_some(self.skater.board_possession.state.selected_hand_424)
++                .filter(|hand| *hand < 2),
+             root: crate::animation::native_matrix(
+                 self.skater.animated_skeleton.roots.animation_to_world,
+             ),

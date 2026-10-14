@@ -74,6 +74,29 @@ class BridgeTests(unittest.TestCase):
     def test_unknown_operation_is_rejected(self):
         self.assertFalse(self.send({"op":"unknown"})["ok"])
 
+    def test_native_carried_board_ownership(self):
+        from headless import floor
+        step={"op":"step","buttons":0,"triggers":[0,0],"left":[0,0],"right":[0,0],"ticks":1}
+        try:
+            reply=self.send({"op":"activate","triangles":floor(1),"rails":[],"spawn":[0,.3,0],"heading":0})
+            self.assertTrue(reply["ok"],reply)
+            self.assertIsNone(reply["carry_hand"],"A mounted board must not attach to a wrist")
+            for _ in range(120): reply=self.send(step)
+            self.assertTrue(self.send({**step,"buttons":32768})["ok"])
+            for _ in range(120): reply=self.send(step)
+            self.assertEqual(reply["state"],"BipedGround")
+            self.assertIn(reply["carry_hand"],(0,1),"Walking carry did not expose its real hand owner")
+            for _ in range(120):
+                reply=self.send({**step,"left":[0,32767]})
+                self.assertTrue(reply["ok"],reply)
+                self.assertIn(reply["carry_hand"],(0,1))
+            self.assertTrue(self.send({**step,"buttons":32768})["ok"])
+            for _ in range(120): reply=self.send(step)
+            self.assertEqual(reply["state"],"PhysicsGround")
+            self.assertIsNone(reply["carry_hand"])
+        finally:
+            self.send({"op":"unknown"})
+
     def test_partial_binary_upload_does_not_block_input_and_resume_keeps_velocity(self):
         from headless import floor
         from riding_checks import packed

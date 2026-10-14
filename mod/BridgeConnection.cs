@@ -16,6 +16,7 @@ sealed class Reply
     public float[] velocity = Array.Empty<float>();
     public float period {get;set;}
     public string state = "";
+    public int? carry_hand;
     public CameraPose? camera {get;set;}
     public bool collision_pending {get;set;}
     public ulong tick {get;set;}
@@ -33,7 +34,7 @@ sealed class Reply
         if (!PoseBlend.Matrix(from.root,to.root,amount,root)) Fallback("root",from.root,to.root);
         for (int i=0;i<bones.Length;i++)
             if (!PoseBlend.Matrix(from.bones[i],to.bones[i],amount,bones[i])) Fallback(to.names[i],from.bones[i],to.bones[i]);
-        names=to.names; state=to.state; tick=to.tick; period=to.period; velocity=to.velocity;
+        names=to.names; state=to.state; carry_hand=to.carry_hand; tick=to.tick; period=to.period; velocity=to.velocity;
         if (from.camera!=null && to.camera!=null)
         {
             camera??=new CameraPose {position=new float[3],basis=new float[9]};
@@ -47,7 +48,7 @@ sealed class Reply
     public void Validate()
     {
         if (!ok) throw new IOException(error ?? "The skating engine rejected the request.");
-        if (root.Length!=16 || velocity.Length!=3 || bones.Length!=names.Length ||
+        if (carry_hand is <0 or >1 || root.Length!=16 || velocity.Length!=3 || bones.Length!=names.Length ||
             root.Any(v=>!float.IsFinite(v)) || velocity.Any(v=>!float.IsFinite(v)) ||
             bones.Any(b=>b.Length!=16 || b.Any(v=>!float.IsFinite(v))) ||
             rest.Length!=0 && (rest.Length!=names.Length || rest.Any(b=>b.Length!=16 || b.Any(v=>!float.IsFinite(v)))) ||
@@ -165,7 +166,7 @@ sealed class BridgeConnection : IDisposable
             }
             catch (Exception error) {MelonLoader.MelonLogger.Warning($"Could not capture rejected request: {error.Message}");}
         }
-        RuntimeDiagnostics.Record(new {kind="reply",ms=watch.Elapsed.TotalMilliseconds,request=new Newtonsoft.Json.Linq.JRaw(payload),reply.tick,reply.state,reply.velocity,reply.root});
+        RuntimeDiagnostics.Record(new {kind="reply",ms=watch.Elapsed.TotalMilliseconds,request=new Newtonsoft.Json.Linq.JRaw(payload),reply.tick,reply.state,reply.carry_hand,reply.velocity,reply.root});
         if (requireFrame) reply.Validate();
         else if (!reply.ok) throw new IOException(reply.error ?? "The skating engine rejected the request.");
         return reply;

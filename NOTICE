@@ -20,6 +20,9 @@ No game assets or generated game assemblies are included in source control.
 patches/skate-core-floor-seams.patch modifies the pinned engine's board-world,
 sphere/primitive contact queries, off-board support motion and its regression
 tests. Applied files carry notices identifying the Skate Schedule changes.
+patches/skate-host-carry-hand.patch exposes the native possession controller's
+selected hand for carried-board avatar retargeting; the modified file identifies
+this change. It does not change the native possession or physics logic.
 
 Upstream attribution retained from the engine's NOTICE:
 IW4L was originally developed by vladtrc.
