@@ -2,6 +2,10 @@
 
 Skate 3 skating inside **Schedule I**: pushing, steering, flick tricks, grinds, a following camera, avatar animation, and native skater bails/recovery.
 
+[![Gameplay showcase: skating and skater recovery in Schedule I](docs/media/showcase.gif)](docs/media/showcase.mp4)
+
+[Full showcase with audio](docs/media/showcase.mp4) · 14 seconds, 720p at 60 fps. The short looping preview is silent. This development recording shows an earlier HUD.
+
 This is an **experimental, single-player, source-only mod**. Schedule I runs under Proton on Linux, while a separate native Rust process supplies the reverse-engineered skating simulation. Your own PS3 Skate 3 gameplay data supplies animation and physics data. It does not run RPCS3 or execute the original PS3 game.
 
 The integration follows [world-of-skatecraft](https://github.com/Kimmo3223/world-of-skatecraft). The simulation is an upstream work in progress, rather than a claim of exact retail behavior. No game files, exported assets, generated game DLLs, or prebuilt release bundle are provided.
