@@ -18,7 +18,7 @@ The integration follows [world-of-skatecraft](https://github.com/Kimmo3223/world
 | Schedule I | Steam Windows/IL2CPP build **0.4.7f12**, Unity **2022.3.62f2** |
 | Skate 3 data | Extracted PS3 **BLUS30464**, USA/Asia edition |
 | Loader | MelonLoader **0.7.3** under Proton Experimental **11.0-100** |
-| Adapter | **0.1.22** |
+| Adapter | **0.1.23** |
 
 You need installed copies of both games, Steam, Proton Experimental, **Rust/Cargo 1.95 or newer**, a C compiler/linker (`cc`), Git, and **Python 3.12 or newer** with `pip` and `venv`. Tested toolchains: Rust 1.98.1 and Python 3.14.7. Setup downloads a local .NET 10 SDK, MelonLoader, Cpp2IL, Unity reference libraries, a Windows .NET 6 runtime, and Python export dependencies into `vendor/`.
 
@@ -103,6 +103,8 @@ python3 scripts/launch.py --game "$schedule_game"
 ```
 
 The launcher starts the native host, applies the required Proton DLL override and offline MelonLoader flags, and stops its host when the game exits. **Skate 3 mode is enabled on startup and connects automatically when you mount a skateboard** in a single-player game. F8 returns control to Schedule I; press it again to re-enable the integration. Normal waiting, connection and recovery states are silent. Only integration failures show a temporary error popup; routine details remain in the logs.
+
+If you mount while airborne, Schedule I handles the fall until the board has ground contact. The bridge then takes over automatically. It also rechecks contact after world preparation, so jumping during preparation cannot become a permanent visual height offset.
 
 You can also use Schedule I's **Play** button in Steam. In **Properties → General → Launch Options**, enter the following, replacing the script path with your checkout's absolute path:
 

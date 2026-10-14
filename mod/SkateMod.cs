@@ -6,7 +6,7 @@ using Il2CppScheduleOne;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(SkateSchedule.SkateMod),"Skate Schedule","0.1.22","Local prototype")]
+[assembly: MelonInfo(typeof(SkateSchedule.SkateMod),"Skate Schedule","0.1.23","Local prototype")]
 [assembly: MelonGame("TVGS","Schedule I")]
 
 namespace SkateSchedule;
@@ -172,6 +172,10 @@ public sealed class SkateMod : MelonMod
             }
             AdvanceSnapshot();
             if (collisionUpload?.IsCompleted==true) {collisionUpload.GetAwaiter().GetResult(); collisionUpload=null;}
+            if (firstReply && !boardHeld && pending==null && frame!=null)
+            {
+                HoldAndResume(); return;
+            }
             if (driving && frame!=null) elapsed=Math.Min(elapsed+Time.deltaTime,0.15f);
             if (pending!=null)
             {
@@ -234,6 +238,8 @@ public sealed class SkateMod : MelonMod
     }
     private void Start(Skateboard next)
     {
+        // An airborne mount must keep native gravity; its height is not a board-model offset.
+        if (!next.isGrounded || !next.IsGrounded()) return;
         if (!Physics.Raycast(next.transform.position+Vector3.up,Vector3.down,out var hit,5,
             next.GroundDetectionMask.value,QueryTriggerInteraction.Ignore))
             throw new InvalidOperationException("Mount the board on solid ground before enabling the bridge.");
@@ -250,6 +256,8 @@ public sealed class SkateMod : MelonMod
     private void HoldAndResume()
     {
         var next=board!;
+        // Preparation is asynchronous: the board may have jumped since Start's contact check.
+        if (!next.isGrounded || !next.IsGrounded()) return;
         if (!Physics.Raycast(next.transform.position+Vector3.up,Vector3.down,out var hit,5,
             next.GroundDetectionMask.value,QueryTriggerInteraction.Ignore))
             throw new InvalidOperationException("The skateboard left solid ground during preparation.");

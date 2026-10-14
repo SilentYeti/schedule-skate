@@ -74,6 +74,31 @@ class BridgeTests(unittest.TestCase):
     def test_unknown_operation_is_rejected(self):
         self.assertFalse(self.send({"op":"unknown"})["ok"])
 
+    def test_airborne_activation_and_resume_fall_to_real_floor(self):
+        from headless import floor
+        from riding_checks import board_position
+        step={"op":"step","buttons":0,"triggers":[0,0],"left":[0,0],"right":[0,0],"ticks":1}
+        try:
+            for operation in ("activate","resume"):
+                request={"op":operation,"spawn":[0,2,0],"heading":0}
+                if operation=="activate": request.update(triangles=floor(1),rails=[])
+                else: request["velocity"]=[0,-2,0]
+                reply=self.send(request)
+                self.assertTrue(reply["ok"],reply)
+                start=board_position(reply)[1]
+                self.assertGreater(start,1.8)
+                heights=[]; velocities=[]; states=[]
+                for _ in range(180):
+                    reply=self.send(step);self.assertTrue(reply["ok"],reply)
+                    heights.append(board_position(reply)[1]);velocities.append(reply["velocity"][1]);states.append(reply["state"])
+                self.assertLess(min(velocities),-2,"Gravity did not accelerate the airborne board downward")
+                self.assertTrue(any(s in ("KnownAir","PhysicsAir") for s in states),states)
+                self.assertGreater(min(heights),-.12,"Airborne mount fell through the floor")
+                self.assertLess(heights[-1],.15,"Airborne mount kept a permanent height above the floor")
+                self.assertEqual(reply["state"],"PhysicsGround")
+        finally:
+            self.send({"op":"unknown"})
+
     def test_native_carried_board_ownership(self):
         from headless import floor
         step={"op":"step","buttons":0,"triggers":[0,0],"left":[0,0],"right":[0,0],"ticks":1}
