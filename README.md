@@ -29,8 +29,8 @@ Keep Schedule I closed during installation. Run these commands from the reposito
 ### 1. Get the source and local tools
 
 ```bash
-git clone https://github.com/SilentYeti/skate-schedule.git
-cd skate-schedule
+git clone https://github.com/SilentYeti/schedule-skate.git
+cd schedule-skate
 
 schedule_game="$HOME/.local/share/Steam/steamapps/common/Schedule I"
 ps3_game="/path/to/Skate 3/PS3_GAME"
