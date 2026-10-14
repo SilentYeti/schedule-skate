@@ -4,10 +4,12 @@ import argparse
 import os
 import socket
 import subprocess
+import sys
 import time
 
 PROJECT=Path(__file__).resolve().parents[1]
 STEAM=Path.home()/".local/share/Steam"
+LOADER_FLAGS=["--melonloader.disablestartscreen","--melonloader.hideconsole","--melonloader.agfoffline"]
 
 def require_game_closed():
     for process in Path("/proc").glob("[0-9]*/comm"):
@@ -22,9 +24,26 @@ def main():
     parser.add_argument("--bridge-only",action="store_true")
     parser.add_argument("--proton",type=Path,default=STEAM/"steamapps/common/Proton - Experimental/proton")
     parser.add_argument("--game",type=Path,default=STEAM/"steamapps/common/Schedule I")
-    args,game_args=parser.parse_known_args()
+    parser.add_argument("--steam-command",action="store_true",
+                        help="Wrap Steam's %%command%%; put this option last in Steam launch options.")
+    argv=sys.argv[1:]
+    steam_command=None
+    if "--steam-command" in argv:
+        at=argv.index("--steam-command")
+        # Steam's runtime command contains its own -- separator; argparse must not consume it.
+        steam_command=argv[at+1:]
+        argv=argv[:at+1]
+    args,game_args=parser.parse_known_args(argv)
+    if args.steam_command:
+        if not steam_command or args.bridge_only:
+            parser.error("--steam-command requires Steam's full command and cannot be combined with --bridge-only.")
+        game_exe=next((Path(part) for part in steam_command if Path(part).name=="Schedule I.exe"),None)
+        if game_exe is not None:
+            args.game=game_exe.parent
     executable=PROJECT/"target/debug/skate-schedule"
     assets=PROJECT/"data/ps3-assets"
+    if not executable.is_file():
+        parser.error("Native bridge is missing. Run cargo build --locked in the checkout first.")
     command=[str(executable),"--assets",str(assets)]
     if args.bridge_only:
         raise SystemExit(subprocess.call(command))
@@ -47,18 +66,20 @@ def main():
             if bridge.poll() is not None:
                 raise RuntimeError(f"The bridge stopped. See {logs/'bridge.log'}")
             environment=os.environ.copy()
-            environment.update({
-                "STEAM_COMPAT_CLIENT_INSTALL_PATH":str(STEAM),
-                "STEAM_COMPAT_DATA_PATH":str(STEAM/"steamapps/compatdata/3164500"),
-                "SteamAppId":"3164500","SteamGameId":"3164500",
-                "WINEDLLOVERRIDES":environment.get("WINEDLLOVERRIDES","")+";version=n,b",
-            })
-            command=[str(args.proton),"run",str(args.game/"Schedule I.exe"),
-                     "--melonloader.disablestartscreen","--melonloader.hideconsole","--melonloader.agfoffline",*game_args]
+            environment["WINEDLLOVERRIDES"]=environment.get("WINEDLLOVERRIDES","")+";version=n,b"
+            if args.steam_command:
+                command=[*steam_command,*LOADER_FLAGS,*game_args]
+            else:
+                environment.update({
+                    "STEAM_COMPAT_CLIENT_INSTALL_PATH":str(STEAM),
+                    "STEAM_COMPAT_DATA_PATH":str(STEAM/"steamapps/compatdata/3164500"),
+                    "SteamAppId":"3164500","SteamGameId":"3164500",
+                })
+                command=[str(args.proton),"run",str(args.game/"Schedule I.exe"),*LOADER_FLAGS,*game_args]
+                runtime=STEAM/"steamapps/common/SteamLinuxRuntime_sniper/run"
+                if runtime.is_file():
+                    command=[str(runtime),"--",*command]
             print("Launching Schedule I. Skate 3 connects automatically when you mount a skateboard; F8 toggles it.",flush=True)
-            runtime=STEAM/"steamapps/common/SteamLinuxRuntime_sniper/run"
-            if runtime.is_file():
-                command=[str(runtime),"--",*command]
             subprocess.run(command,cwd=args.game,env=environment,check=True)
         finally:
             bridge.terminate()

@@ -9,6 +9,7 @@ After `python3 scripts/setup_dev.py`, these checks need no running game or priva
 ```bash
 python3 -B scripts/test_setup.py
 python3 -B scripts/test_install.py
+python3 -B scripts/test_launch.py
 vendor/python/bin/python -B scripts/test_export.py
 vendor/python/bin/python -B scripts/test_collision.py
 vendor/dotnet/dotnet build tools/GeometryChecks/GeometryChecks.csproj
@@ -18,6 +19,8 @@ cargo test --locked -p skate-core player::offboard::ground_motion
 ```
 
 `test_setup.py` checks application, repeated application and refusal of conflicting vendor patches in a temporary checkout. Expected patch-conflict messages can appear while it passes. `test_install.py` uses temporary fake game/loader files. The PS3 input fixture is synthetic. The real collision-cache test is skipped until you export your own cache; other collision tests use synthetic shapes.
+
+`test_launch.py` checks Steam runtime argument forwarding (including `--` and paths with spaces), preservation of Steam's environment/prefix, standalone launch behavior, empty-command rejection and owned-host cleanup on launch failure. Its subprocesses are mocked; use a real Steam Play launch to verify overlay, runtime loading and game-exit cleanup.
 
 ## Native integration tests
 

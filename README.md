@@ -104,7 +104,15 @@ python3 scripts/launch.py --game "$schedule_game"
 
 The launcher starts the native host, applies the required Proton DLL override and offline MelonLoader flags, and stops its host when the game exits. **Skate 3 mode is enabled on startup and connects automatically when you mount a skateboard** in a single-player game. F8 returns control to Schedule I; press it again to re-enable the integration. Normal waiting, connection and recovery states are silent. Only integration failures show a temporary error popup; routine details remain in the logs.
 
-Use this launcher instead of assuming an ordinary Steam launch supplies the same configuration. It requires the standard Steam root at `~/.local/share/Steam` and uses AppID 3164500's prefix there. `--game` selects a game folder and `--proton` selects a Proton executable; these options do not relocate the Steam root/prefix. Alternative Steam layouts need launcher changes.
+You can also use Schedule I's **Play** button in Steam. In **Properties → General → Launch Options**, enter the following, replacing the script path with your checkout's absolute path:
+
+```text
+python3 "/absolute/path/to/schedule-skate/scripts/launch.py" --steam-command %command%
+```
+
+In **Properties → Compatibility**, select the tested **Proton Experimental**. The wrapper starts the native bridge, forwards Steam's selected runtime/Proton command and environment, adds the loader flags/DLL override, then stops its bridge when the game exits. Keep the checkout at the configured path. Clear this launch option to stop using the wrapper; the installed adapter remains until you uninstall it.
+
+The standalone command above uses the standard Steam root at `~/.local/share/Steam` and AppID 3164500's prefix there. `--game` selects a game folder and `--proton` selects a Proton executable; those standalone options do not relocate the Steam root/prefix. The Steam wrapper uses Steam's selected prefix and infers the game directory from its `Schedule I.exe` argument. Alternative Steam layouts have not been tested end to end.
 
 ## Controls
 
